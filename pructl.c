@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
+#include <string.h>
 #include <libpru.h>
 
 static void __attribute__((noreturn))
@@ -96,8 +98,8 @@ main(int argc, char **argv)
 	}
 	pru = pru_alloc(pru_type);
 	if (pru == NULL) {
-		fprintf(stderr, "%s: unable to allocate pru structure\n",
-		    getprogname());
+		fprintf(stderr, "%s: unable to allocate PRU structure: %s\n",
+		    getprogname(), strerror(errno));
 		return 3;
 	}
 	if (reset) {
@@ -105,7 +107,7 @@ main(int argc, char **argv)
 		if (error) {
 			fprintf(stderr, "%s: unable to reset PRU %d\n",
 			    getprogname(), pru_number);
-			return 6;
+			return 4;
 		}
 	}
 	if (argc > 1) {
@@ -113,7 +115,7 @@ main(int argc, char **argv)
 		if (error) {
 			fprintf(stderr, "%s: unable to upload %s\n",
 			    getprogname(), argv[0]);
-			return 7;
+			return 5;
 		}
 	}
 	if (enable) {
@@ -121,7 +123,7 @@ main(int argc, char **argv)
 		if (error) {
 			fprintf(stderr, "%s: unable to enable PRU %d\n",
 			    getprogname(), pru_number);
-			return 4;
+			return 6;
 		}
 	}
 	if (disable) {
@@ -129,7 +131,7 @@ main(int argc, char **argv)
 		if (error) {
 			fprintf(stderr, "%s: unable to disable PRU %d\n",
 			    getprogname(), pru_number);
-			return 5;
+			return 7;
 		}
 	}
 	if (wait) {
