@@ -43,7 +43,6 @@ main(int argc, char **argv)
 {
 	int ch;
 	int reset, enable, disable, wait;
-	const char *infile, *outfile;
 	const char *type;
 	unsigned int pru_number;
 	pru_type_t pru_type;
@@ -51,7 +50,6 @@ main(int argc, char **argv)
         int error;
 
 	reset = enable = disable = pru_number = wait = 0;
-	infile = outfile = NULL;
 	type = NULL;
 	error = 0;
 	while ((ch = getopt(argc, argv, "t:p:edrw")) != -1) {
@@ -90,11 +88,6 @@ main(int argc, char **argv)
 		fprintf(stderr, "%s: invalid type '%s'\n", getprogname(),
 		    type);
 		return 2;
-	}
-	if (infile && !outfile) {
-		fprintf(stderr, "%s: missing output file (-o)\n",
-		    getprogname());
-		usage();
 	}
 	pru = pru_alloc(pru_type);
 	if (pru == NULL) {
