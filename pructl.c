@@ -135,4 +135,5 @@ main(int argc, char **argv)
 			return 8;
 		}
 	}
+	pru_free(pru);
 }
