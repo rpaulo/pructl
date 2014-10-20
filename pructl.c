@@ -103,11 +103,11 @@ main(int argc, char **argv)
 			return 4;
 		}
 	}
-	if (argc > 1) {
+	if (argc > 0) {
 		error = pru_upload(pru, pru_number, argv[0]);
 		if (error) {
-			fprintf(stderr, "%s: unable to upload %s\n",
-			    getprogname(), argv[0]);
+			fprintf(stderr, "%s: unable to upload %s: %s\n",
+			    getprogname(), argv[0], strerror(errno));
 			return 5;
 		}
 	}
