@@ -100,6 +100,7 @@ main_interface(void)
 {
 	EditLine *elp;
 	History *hp;
+	HistEvent ev;
 	Tokenizer *tp;
 	int count = 0;
 	unsigned int i;
@@ -115,6 +116,7 @@ main_interface(void)
 		el_end(elp);
 		return 1;
 	}
+	history(hp, &ev, H_SETSIZE, 100);
 	tp = tok_init(NULL);
 	if (tp == NULL) {
 		history_end(hp);
