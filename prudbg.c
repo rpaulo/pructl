@@ -35,6 +35,7 @@
 
 static pru_t pru;
 static unsigned int pru_number;
+static uint32_t pc;
 
 static void __attribute__((noreturn))
 usage(void)
@@ -60,6 +61,9 @@ prompt(void)
 DECL_CMD(help);
 DECL_CMD(quit);
 DECL_CMD(run);
+DECL_CMD(reset);
+DECL_CMD(halt);
+DECL_CMD(disassemble);
 
 static struct commands {
 	const char	*cmd;
@@ -69,6 +73,9 @@ static struct commands {
 	{ "help", "Show a list of all commands.", cmd_help },
 	{ "quit", "Quit the PRU debugger.", cmd_quit },
 	{ "run", "Starts execution on the PRU.", cmd_run },
+	{ "reset", "Resets the PRU.", cmd_reset },
+	{ "halt", "Halts the PRU.", cmd_halt },
+	{ "disassemble", "Disassemble the program.", cmd_disassemble }
 };
 
 /*
@@ -93,6 +100,31 @@ cmd_run(int argc __unused, const char *argv[] __unused)
 {
 	pru_enable(pru, pru_number);
 	pru_wait(pru, pru_number);
+}
+
+static void
+cmd_reset(int argc __unused, const char *argv[] __unused)
+{
+	pru_reset(pru, pru_number);
+}
+
+static void
+cmd_halt(int argc __unused, const char *argv[] __unused)
+{
+	pru_disable(pru, pru_number);
+}
+
+static void
+cmd_disassemble(int argc __unused, const char *argv[] __unused)
+{
+	unsigned int i;
+	char buf[10];
+
+	for (i = pc; i < 64; i += 4) {
+		ti_disassemble(pru_read_mem(pru, pru_number, pc + i),
+		    buf, sizeof(buf));
+		printf("<0x%04x>   %s\n", pc + i, buf);
+	}
 }
 
 static int
