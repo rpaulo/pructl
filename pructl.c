@@ -79,6 +79,11 @@ main(int argc, char **argv)
 	}
 	argc -= optind;
 	argv += optind;
+	if (enable && disable) {
+		fprintf(stderr, "%s: conflicting options: -e and -d\n",
+		    getprogname());
+		usage();
+	}
 	if (type == NULL) {
 		fprintf(stderr, "%s: missing type (-t)\n", getprogname());
 		usage();
