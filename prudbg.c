@@ -121,7 +121,7 @@ cmd_disassemble(int argc __unused, const char *argv[] __unused)
 	char buf[10];
 
 	for (i = pc; i < 64; i += 4) {
-		ti_disassemble(pru_read_mem(pru, pru_number, pc + i),
+		pru_disassemble(pru, pru_read_imem(pru, pru_number, pc + i),
 		    buf, sizeof(buf));
 		printf("<0x%04x>   %s\n", pc + i, buf);
 	}
