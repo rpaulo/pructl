@@ -166,6 +166,7 @@ main_interface(void)
 	el_set(elp, EL_PROMPT, prompt);
 	el_set(elp, EL_HIST, history, hp);
 	el_set(elp, EL_SIGNAL, 1);
+	el_set(elp, EL_EDITOR, "emacs");
 	el_source(elp, NULL);
 	do {
 		line = el_gets(elp, &count);
@@ -174,6 +175,7 @@ main_interface(void)
 		tok_str(tp, line, &t_argc, &t_argv);
 		if (t_argc == 0)
 			continue;
+		history(hp, &ev, H_ENTER, line);
 		for (i = 0; i < nitems(cmds); i++) {
 			if (strcmp(t_argv[0], cmds[i].cmd) == 0) {
 				cmds[i].handler(t_argc - 1, t_argv + 1);
