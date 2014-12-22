@@ -58,24 +58,26 @@ prompt(void)
 #define	DECL_CMD(name)	\
 	static void cmd_##name(int, const char **)
 
+DECL_CMD(breakpoint);
+DECL_CMD(disassemble);
+DECL_CMD(halt);
 DECL_CMD(help);
 DECL_CMD(quit);
-DECL_CMD(run);
 DECL_CMD(reset);
-DECL_CMD(halt);
-DECL_CMD(disassemble);
+DECL_CMD(run);
 
 static struct commands {
 	const char	*cmd;
 	const char	*help;
 	void		(*handler)(int, const char **);
 } cmds[] = {
+	{ "breakpoint", "Manage breakpoints.", cmd_breakpoint },
+	{ "disassemble", "Disassemble the program.", cmd_disassemble },
+	{ "halt", "Halts the PRU.", cmd_halt },
 	{ "help", "Show a list of all commands.", cmd_help },
 	{ "quit", "Quit the PRU debugger.", cmd_quit },
-	{ "run", "Starts execution on the PRU.", cmd_run },
 	{ "reset", "Resets the PRU.", cmd_reset },
-	{ "halt", "Halts the PRU.", cmd_halt },
-	{ "disassemble", "Disassemble the program.", cmd_disassemble }
+	{ "run", "Starts the PRU.", cmd_run },
 };
 
 /*
@@ -86,7 +88,7 @@ cmd_help(int argc __unused, const char *argv[] __unused)
 {
 	printf("The following is a list of built-in commands:\n\n");
 	for (unsigned int i = 0; i < nitems(cmds); i++)
-		printf("%-10s -- %s\n", cmds[i].cmd, cmds[i].help);
+		printf("%-11s -- %s\n", cmds[i].cmd, cmds[i].help);
 }
 
 static void __attribute__((noreturn))
@@ -125,6 +127,12 @@ cmd_disassemble(int argc __unused, const char *argv[] __unused)
 		    buf, sizeof(buf));
 		printf("<0x%04x>   %s\n", pc + i, buf);
 	}
+}
+
+static void
+cmd_breakpoint(int argc __unused, const char *argv[] __unused)
+{
+	printf("Unimplemented\n");
 }
 
 static int
