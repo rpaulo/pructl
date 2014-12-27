@@ -64,6 +64,7 @@ DECL_CMD(halt);
 DECL_CMD(help);
 DECL_CMD(quit);
 DECL_CMD(reset);
+DECL_CMD(register);
 DECL_CMD(run);
 
 static struct commands {
@@ -77,6 +78,7 @@ static struct commands {
 	{ "help", "Show a list of all commands.", cmd_help },
 	{ "quit", "Quit the PRU debugger.", cmd_quit },
 	{ "reset", "Resets the PRU.", cmd_reset },
+	{ "register", "Operates on registers.", cmd_register },
 	{ "run", "Starts the PRU.", cmd_run },
 };
 
@@ -130,9 +132,44 @@ cmd_disassemble(int argc __unused, const char *argv[] __unused)
 }
 
 static void
-cmd_breakpoint(int argc __unused, const char *argv[] __unused)
+cmd_breakpoint(int argc, const char *argv[] __unused)
 {
-	printf("Unimplemented\n");
+	if (argc == 0) {
+		printf("The following subcommands are supported:\n\n");
+		printf("delete -- Deletes a breakpoint (or all).\n");
+		printf("list   -- Lists all breakpoints.\n");
+		printf("set    -- Creates a breakpoint.\n");
+	}
+}
+
+static void
+cmd_register(int argc, const char *argv[])
+{
+	int read_reg;
+	unsigned int i;
+
+	if (argc == 0) {
+		printf("The following subcommands are supported:\n\n");
+		printf("read  -- Reads a register or all.\n");
+		printf("write -- Modifies a register.\n");
+		return;
+	}
+	if (strcmp(argv[0], "read") == 0) {
+		if (argc > 1) {
+			if (strcmp(argv[1], "all") == 0)
+				for (i = 0; i < 32; i++)
+					printf("\tr%u = 0x%x\n",
+					    i,
+					    pru_read_reg(pru, pru_number, i));
+			else {
+				if (argv[1][0] == 'r')
+					argv[1]++;
+				read_reg = atoi(argv[1]);
+			}
+
+		}
+	}
+
 }
 
 static int
