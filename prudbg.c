@@ -145,8 +145,8 @@ cmd_breakpoint(int argc, const char *argv[] __unused)
 static void
 cmd_register(int argc, const char *argv[])
 {
-	int read_reg;
 	unsigned int i;
+	uint32_t reg, val;
 
 	if (argc == 0) {
 		printf("The following subcommands are supported:\n\n");
@@ -158,17 +158,30 @@ cmd_register(int argc, const char *argv[])
 		if (argc > 1) {
 			if (strcmp(argv[1], "all") == 0)
 				for (i = 0; i < 32; i++)
-					printf("\tr%u = 0x%x\n",
+					printf("    r%u = 0x%x\n",
 					    i,
 					    pru_read_reg(pru, pru_number, i));
 			else {
 				if (argv[1][0] == 'r')
 					argv[1]++;
-				read_reg = atoi(argv[1]);
+				reg = (uint32_t)strtoul(argv[1], NULL, 10);
+				printf("  %u = 0x%x\n", reg,
+				    pru_read_reg(pru, pru_number, reg));
 			}
 
-		}
-	}
+		} else
+			printf("error: missing register name\n");
+	} else if (strcmp(argv[0], "write") == 0) {
+		if (argc > 2) {
+			if (argv[1][0] == 'r')
+				argv[1]++;
+			reg = (uint32_t)strtoul(argv[1], NULL, 10);
+			val = (uint32_t)strtoul(argv[2], NULL, 10);
+			pru_write_reg(pru, pru_number, reg, val);
+		} else
+			printf("error: missing register and/or value\n");
+	} else
+		printf("error: unsupported command\n");
 
 }
 
@@ -241,7 +254,7 @@ main(int argc, char *argv[])
 	while ((ch = getopt(argc, argv, "p:t:")) != -1) {
 		switch (ch) {
 		case 'p':
-			pru_number = (unsigned int)atoi(optarg);
+			pru_number = (unsigned int)strtoul(optarg, NULL, 10);
 			break;
 		case 't':
 			type = optarg;

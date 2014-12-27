@@ -58,7 +58,7 @@ main(int argc, char **argv)
 			type = optarg;
 			break;
 		case 'p':
-			pru_number = (unsigned int)atoi(optarg);
+			pru_number = (unsigned int)strtoul(optarg, NULL, 10);
 			break;
 		case 'e':
 			enable = 1;
