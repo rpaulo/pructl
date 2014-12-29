@@ -35,7 +35,6 @@
 
 static pru_t pru;
 static unsigned int pru_number;
-static uint32_t pc;
 
 static void __attribute__((noreturn))
 usage(void)
@@ -123,11 +122,17 @@ cmd_disassemble(int argc __unused, const char *argv[] __unused)
 {
 	unsigned int i;
 	char buf[10];
+	uint32_t pc;
 
+	pc = pru_read_reg(pru, pru_number, REG_PC);
 	for (i = pc; i < 64; i += 4) {
 		pru_disassemble(pru, pru_read_imem(pru, pru_number, pc + i),
 		    buf, sizeof(buf));
-		printf("<0x%04x>   %s\n", pc + i, buf);
+		printf("<0x%04x>   %s", pc + i, buf);
+		if (pc == i)
+			puts("  <----");
+		else
+			puts("");
 	}
 }
 
@@ -142,11 +147,27 @@ cmd_breakpoint(int argc, const char *argv[] __unused)
 	}
 }
 
+static enum pru_reg
+reg_name_to_enum(const char *name)
+{
+	unsigned int reg;
+
+	if (strcmp(name, "pc") == 0)
+		return REG_PC;
+	else if (name[0] == 'r')
+		name++;
+	reg = (unsigned int)strtoul(name+1, NULL, 10);
+	if (reg >= REG_R0 && reg <= REG_R31)
+		return reg;
+	else
+		return REG_R0; /* XXX */
+}
+
 static void
 cmd_register(int argc, const char *argv[])
 {
 	unsigned int i;
-	uint32_t reg, val;
+	uint32_t val;
 
 	if (argc == 0) {
 		printf("The following subcommands are supported:\n\n");
@@ -156,28 +177,24 @@ cmd_register(int argc, const char *argv[])
 	}
 	if (strcmp(argv[0], "read") == 0) {
 		if (argc > 1) {
-			if (strcmp(argv[1], "all") == 0)
-				for (i = 0; i < 32; i++)
-					printf("    r%u = 0x%x\n",
-					    i,
+			if (strcmp(argv[1], "all") == 0) {
+				for (i = REG_R0; i <= REG_R31; i++)
+					printf("  r%u = 0x%x\n", i,
 					    pru_read_reg(pru, pru_number, i));
-			else {
-				if (argv[1][0] == 'r')
-					argv[1]++;
-				reg = (uint32_t)strtoul(argv[1], NULL, 10);
-				printf("  %u = 0x%x\n", reg,
-				    pru_read_reg(pru, pru_number, reg));
+				printf("  pc = 0x%x\n",
+				    pru_read_reg(pru, pru_number, REG_PC));
+			} else {
+				printf("  %s = 0x%x\n", argv[1],
+				    pru_read_reg(pru, pru_number,
+					reg_name_to_enum(argv[1])));
 			}
-
 		} else
 			printf("error: missing register name\n");
 	} else if (strcmp(argv[0], "write") == 0) {
 		if (argc > 2) {
-			if (argv[1][0] == 'r')
-				argv[1]++;
-			reg = (uint32_t)strtoul(argv[1], NULL, 10);
 			val = (uint32_t)strtoul(argv[2], NULL, 10);
-			pru_write_reg(pru, pru_number, reg, val);
+			pru_write_reg(pru, pru_number,
+			    reg_name_to_enum(argv[1]), val);
 		} else
 			printf("error: missing register and/or value\n");
 	} else
