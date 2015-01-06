@@ -118,13 +118,16 @@ cmd_halt(int argc __unused, const char *argv[] __unused)
 }
 
 static void
-cmd_disassemble(int argc __unused, const char *argv[] __unused)
+cmd_disassemble(int argc, const char *argv[])
 {
 	unsigned int i, start, end;
-	char buf[10];
+	char buf[32];
 	uint32_t pc;
 
-	pc = pru_read_reg(pru, pru_number, REG_PC);
+	if (argc > 0)
+		pc = (uint32_t)strtoul(argv[0], NULL, 10);
+	else
+		pc = pru_read_reg(pru, pru_number, REG_PC);
 	if (pc < 16) {
 		start = pc;
 		end = pc + 16;
@@ -139,7 +142,7 @@ cmd_disassemble(int argc __unused, const char *argv[] __unused)
 			printf("-> ");
 		else
 			printf("   ");
-		printf("0x%04x:  %s\n", pc + i, buf);
+		printf("0x%04x:  %s\n", i, buf);
 	}
 }
 
