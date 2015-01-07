@@ -126,17 +126,15 @@ cmd_disassemble(int argc, const char *argv[])
 	char buf[32];
 	uint32_t pc;
 
+	pc = pru_read_reg(pru, pru_number, REG_PC);
 	if (argc > 0)
-		pc = (uint32_t)strtoul(argv[0], NULL, 10);
+		start = (uint32_t)strtoul(argv[0], NULL, 10);
 	else
-		pc = pru_read_reg(pru, pru_number, REG_PC);
-	if (pc < 16) {
 		start = pc;
-		end = pc + 16;
-	} else {
-		start = pc - 8;
-		end = pc + 8 + 1;
-	}
+	if (argc > 1)
+		end = start + (uint32_t)strtoul(argv[1], NULL, 10);
+	else
+		end = start + 16;
 	for (i = start; i < end; i += 4) {
 		pru_disassemble(pru, pru_read_imem(pru, pru_number, i),
 		    buf, sizeof(buf));
