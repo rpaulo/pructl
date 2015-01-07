@@ -61,6 +61,7 @@ DECL_CMD(breakpoint);
 DECL_CMD(disassemble);
 DECL_CMD(halt);
 DECL_CMD(help);
+DECL_CMD(memory);
 DECL_CMD(quit);
 DECL_CMD(reset);
 DECL_CMD(register);
@@ -75,6 +76,7 @@ static struct commands {
 	{ "disassemble", "Disassemble the program.", cmd_disassemble },
 	{ "halt", "Halts the PRU.", cmd_halt },
 	{ "help", "Show a list of all commands.", cmd_help },
+	{ "memory", "Inspect PRU memory.", cmd_memory },
 	{ "quit", "Quit the PRU debugger.", cmd_quit },
 	{ "reset", "Resets the PRU.", cmd_reset },
 	{ "register", "Operates on registers.", cmd_register },
@@ -150,7 +152,7 @@ static void
 cmd_breakpoint(int argc, const char *argv[] __unused)
 {
 	if (argc == 0) {
-		printf("The following subcommands are supported:\n\n");
+		printf("The following sub-commands are supported:\n\n");
 		printf("delete -- Deletes a breakpoint (or all).\n");
 		printf("list   -- Lists all breakpoints.\n");
 		printf("set    -- Creates a breakpoint.\n");
@@ -180,7 +182,7 @@ cmd_register(int argc, const char *argv[])
 	uint32_t val;
 
 	if (argc == 0) {
-		printf("The following subcommands are supported:\n\n");
+		printf("The following sub-commands are supported:\n\n");
 		printf("read  -- Reads a register or all.\n");
 		printf("write -- Modifies a register.\n");
 		return;
@@ -208,8 +210,24 @@ cmd_register(int argc, const char *argv[])
 		} else
 			printf("error: missing register and/or value\n");
 	} else
-		printf("error: unsupported command\n");
+		printf("error: unsupported sub-command\n");
+}
 
+static void
+cmd_memory(int argc, const char *argv[])
+{
+	if (argc == 0) {
+		printf("The following sub-commands are supported:\n\n");
+		printf("read  -- Read from the PRU memory.\n");
+		printf("write -- Write to the PRU memory.\n");
+		return;
+	}
+	if (strcmp(argv[0], "read") == 0) {
+		/* TODO */
+	} else if (strcmp(argv[0], "write") == 0) {
+		/* TODO */
+	} else
+		printf("error: unsupported sub-command\n");
 }
 
 static int
