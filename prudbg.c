@@ -166,7 +166,7 @@ reg_name_to_enum(const char *name)
 		return REG_PC;
 	else if (name[0] == 'r')
 		name++;
-	reg = (unsigned int)strtoul(name+1, NULL, 10);
+	reg = (unsigned int)strtoul(name, NULL, 10);
 	if (reg >= REG_R0 && reg <= REG_R31)
 		return reg;
 	else
