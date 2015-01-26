@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <libpru.h>
+#include <libutil.h>
 #include <sys/param.h>
 
 static pru_t pru;
@@ -170,7 +171,7 @@ reg_name_to_enum(const char *name)
 	if (reg >= REG_R0 && reg <= REG_R31)
 		return reg;
 	else
-		return REG_R0; /* XXX */
+		return REG_INVALID;
 }
 
 static void
@@ -214,6 +215,9 @@ cmd_register(int argc, const char *argv[])
 static void
 cmd_memory(int argc, const char *argv[])
 {
+	uint8_t *buf;
+	size_t size, i, addr;
+
 	if (argc == 0) {
 		printf("The following sub-commands are supported:\n\n");
 		printf("read  -- Read from the PRU memory.\n");
@@ -221,7 +225,20 @@ cmd_memory(int argc, const char *argv[])
 		return;
 	}
 	if (strcmp(argv[0], "read") == 0) {
-		/* TODO */
+		if (argc > 1)
+			addr = strtoul(argv[1], NULL, 10);
+		else
+			addr = 0;
+		if (argc > 2)
+			size = strtoul(argv[2], NULL, 10);
+		else
+			size = 128;
+		buf = malloc(size);
+		for (i = 0; i < size; i++) {
+			buf[i] = pru_read_mem(pru, pru_number, 0);
+		}
+		hexdump(buf, (int)size, NULL, 0);
+		free(buf);
 	} else if (strcmp(argv[0], "write") == 0) {
 		/* TODO */
 	} else
