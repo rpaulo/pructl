@@ -179,6 +179,7 @@ cmd_register(int argc, const char *argv[])
 {
 	unsigned int i;
 	uint32_t val;
+	enum pru_reg reg;
 
 	if (argc == 0) {
 		printf("The following sub-commands are supported:\n\n");
@@ -195,17 +196,25 @@ cmd_register(int argc, const char *argv[])
 				printf("  pc = 0x%x\n",
 				    pru_read_reg(pru, pru_number, REG_PC));
 			} else {
+				reg = reg_name_to_enum(argv[1]);
+				if (reg == REG_INVALID) {
+					printf("error: invalid register\n");
+					return;
+				}
 				printf("  %s = 0x%x\n", argv[1],
-				    pru_read_reg(pru, pru_number,
-					reg_name_to_enum(argv[1])));
+				    pru_read_reg(pru, pru_number, reg));
 			}
 		} else
 			printf("error: missing register name\n");
 	} else if (strcmp(argv[0], "write") == 0) {
 		if (argc > 2) {
 			val = (uint32_t)strtoul(argv[2], NULL, 10);
-			pru_write_reg(pru, pru_number,
-			    reg_name_to_enum(argv[1]), val);
+			reg = reg_name_to_enum(argv[1]);
+			if (reg == REG_INVALID) {
+				printf("error: invalid register\n");
+				return;
+			}
+			pru_write_reg(pru, pru_number, reg, val);
 		} else
 			printf("error: missing register and/or value\n");
 	} else
