@@ -235,7 +235,7 @@ cmd_memory(int argc, const char *argv[])
 			size = 128;
 		buf = malloc(size);
 		for (i = 0; i < size; i++) {
-			buf[i] = pru_read_mem(pru, pru_number, 0);
+			buf[i] = pru_read_mem(pru, pru_number, addr + i);
 		}
 		hexdump(buf, (int)size, NULL, 0);
 		free(buf);
