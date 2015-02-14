@@ -32,10 +32,24 @@
 #include <string.h>
 #include <libpru.h>
 #include <libutil.h>
+#include <sys/queue.h>
 #include <sys/param.h>
 
 static pru_t pru;
 static unsigned int pru_number;
+static unsigned int last_breakpoint;
+static unsigned int in_breakpoint;
+
+struct breakpoint {
+	uint32_t n;
+	uint32_t addr;
+	uint32_t orig_instr;
+	uint32_t resv;
+	LIST_ENTRY(breakpoint) entry;
+};
+
+static LIST_HEAD(, breakpoint) breakpoint_list =
+	LIST_HEAD_INITIALIZER(breakpoint_list);
 
 static void __attribute__((noreturn))
 usage(void)
@@ -59,6 +73,7 @@ prompt(void)
 	static void cmd_##name(int, const char **)
 
 DECL_CMD(breakpoint);
+DECL_CMD(continue);
 DECL_CMD(disassemble);
 DECL_CMD(halt);
 DECL_CMD(help);
@@ -74,14 +89,15 @@ static struct commands {
 	void		(*handler)(int, const char **);
 } cmds[] = {
 	{ "breakpoint", "Manage breakpoints.", cmd_breakpoint },
+	{ "continue", "Continue after a breakpoint.", cmd_continue },
 	{ "disassemble", "Disassemble the program.", cmd_disassemble },
-	{ "halt", "Halts the PRU.", cmd_halt },
+	{ "halt", "Halt the PRU.", cmd_halt },
 	{ "help", "Show a list of all commands.", cmd_help },
 	{ "memory", "Inspect PRU memory.", cmd_memory },
 	{ "quit", "Quit the PRU debugger.", cmd_quit },
-	{ "reset", "Resets the PRU.", cmd_reset },
-	{ "register", "Operates on registers.", cmd_register },
-	{ "run", "Starts the PRU.", cmd_run },
+	{ "reset", "Reset the PRU.", cmd_reset },
+	{ "register", "Operate on registers.", cmd_register },
+	{ "run", "Start the PRU.", cmd_run },
 };
 
 /*
@@ -104,8 +120,25 @@ cmd_quit(int argc __unused, const char *argv[] __unused)
 static void
 cmd_run(int argc __unused, const char *argv[] __unused)
 {
+	struct breakpoint *bp;
+	uint32_t pc;
+
 	pru_enable(pru, pru_number);
 	pru_wait(pru, pru_number);
+	pc = pru_read_reg(pru, pru_number, REG_PC);
+	LIST_FOREACH(bp, &breakpoint_list, entry) {
+		if (bp->addr == pc)
+			break;
+	}
+	if (bp == NULL) {
+		printf("PRU%d halted normally\n", pru_number);
+		in_breakpoint = 0;
+	} else {
+		printf("PRU%d halted, breakpoint %d, address 0x%x\n",
+		    pru_number, bp->n, pc);
+		in_breakpoint = 1;
+		cmd_disassemble(0, NULL);
+	}
 }
 
 static void
@@ -148,13 +181,77 @@ cmd_disassemble(int argc, const char *argv[])
 }
 
 static void
-cmd_breakpoint(int argc, const char *argv[] __unused)
+cmd_breakpoint(int argc, const char *argv[])
 {
+	uint32_t addr;
+	struct breakpoint *bp;
+	uint32_t bpn;
+
 	if (argc == 0) {
 		printf("The following sub-commands are supported:\n\n");
 		printf("delete -- Deletes a breakpoint (or all).\n");
 		printf("list   -- Lists all breakpoints.\n");
 		printf("set    -- Creates a breakpoint.\n");
+		return;
+	}
+	if (strcmp(argv[0], "delete") == 0) {
+		if (argc < 2) {
+			printf("error: missing breakpoint number\n");
+			return;
+		}
+		bpn = (uint32_t)strtoul(argv[1], NULL, 10);
+		LIST_FOREACH(bp, &breakpoint_list, entry) {
+			if (bp->n == bpn)
+				break;
+		}
+		if (bp == NULL) {
+			printf("error: breakpoint not found\n");
+			return;
+		}
+		/* TODO: restore instruction */
+		LIST_REMOVE(bp, entry);
+		free(bp);
+	} else if (strcmp(argv[0], "list") == 0) {
+		LIST_FOREACH(bp, &breakpoint_list, entry) {
+			printf("Breakpoint %d at 0x%x\n", bp->n,
+			    bp->addr);
+		}
+	} else if (strcmp(argv[0], "set") == 0) {
+		if (argc < 2) {
+			printf("error: missing breakpoint address\n");
+			return;
+		}
+		addr = (uint32_t)strtoul(argv[1], NULL, 10);
+		LIST_FOREACH(bp, &breakpoint_list, entry) {
+			if (bp->addr == addr)
+				break;
+		}
+		if (bp != NULL) {
+			printf("error: breakpoint already present\n");
+			return;
+		}
+		/* TODO: insert instruction */
+		bp = malloc(sizeof(*bp));
+		if (bp == NULL) {
+			printf("error: unable to allocate memory\n");
+			return;
+		}
+		bp->n = last_breakpoint++;
+		bp->addr = addr;
+		bp->orig_instr = pru_read_imem(pru, pru_number,
+		    addr);
+		LIST_INSERT_HEAD(&breakpoint_list, bp, entry);
+	} else
+		printf("error: unknown breakpoint command\n");
+}
+
+static void
+cmd_continue(int argc __unused, const char *argv[] __unused)
+{
+	if (in_breakpoint) {
+		cmd_run(0, NULL);
+	} else {
+		printf("error: not in a breakpoint\n");
 	}
 }
 
@@ -225,7 +322,7 @@ static void
 cmd_memory(int argc, const char *argv[])
 {
 	uint8_t *buf;
-	size_t size, i, addr;
+	uint32_t size, i, addr;
 
 	if (argc == 0) {
 		printf("The following sub-commands are supported:\n\n");
@@ -235,11 +332,11 @@ cmd_memory(int argc, const char *argv[])
 	}
 	if (strcmp(argv[0], "read") == 0) {
 		if (argc > 1)
-			addr = strtoul(argv[1], NULL, 10);
+			addr = (uint32_t)strtoul(argv[1], NULL, 10);
 		else
 			addr = 0;
 		if (argc > 2)
-			size = strtoul(argv[2], NULL, 10);
+			size = (uint32_t)strtoul(argv[2], NULL, 10);
 		else
 			size = 128;
 		buf = malloc(size);
