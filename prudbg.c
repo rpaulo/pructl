@@ -56,6 +56,8 @@ usage(void)
 {
 	fprintf(stderr, "usage: %s -t type [-p pru-number] <program>\n",
 	    getprogname());
+	fprintf(stderr, "usage: %s -t type [-p pru-number] -a\n",
+	    getprogname());
 	exit(1);
 }
 
@@ -412,13 +414,17 @@ main_interface(void)
 int
 main(int argc, char *argv[])
 {
-	int ch;
+	int ch, attach;
 	char *type;
 	pru_type_t pru_type;
 
+	attach = 0;
 	type = NULL;
-	while ((ch = getopt(argc, argv, "p:t:")) != -1) {
+	while ((ch = getopt(argc, argv, "ap:t:")) != -1) {
 		switch (ch) {
+		case 'a':
+			attach = 1;
+			break;
 		case 'p':
 			pru_number = (unsigned int)strtoul(optarg, NULL, 10);
 			break;
@@ -433,7 +439,7 @@ main(int argc, char *argv[])
 		warnx("missing type (-t)");
 		usage();
 	}
-	if (argc == 0) {
+	if (argc == 0 && !attach) {
 	        warnx("missing binary file");
 		usage();
 	}
@@ -445,15 +451,18 @@ main(int argc, char *argv[])
 	pru = pru_alloc(pru_type);
 	if (pru == NULL)
 		err(1, "unable to allocate PRU structure");
-	pru_reset(pru, pru_number);
-	printf("Uploading '%s' to PRU %d: ", argv[0], pru_number);
-	fflush(stdout);
-	if (pru_upload(pru, pru_number, argv[0]) != 0) {
-		printf("\n");
-		pru_free(pru);
-		err(1, "could not upload file");
-	}
-	printf("done.\n");
+	if (!attach) {
+		pru_reset(pru, pru_number);
+		printf("Uploading '%s' to PRU %d: ", argv[0], pru_number);
+		fflush(stdout);
+		if (pru_upload(pru, pru_number, argv[0]) != 0) {
+			printf("\n");
+			pru_free(pru);
+			err(1, "could not upload file");
+		}
+		printf("done.\n");
+	} else
+		printf("Attaching to PRU %d.\n", pru_number);
 
 	return main_interface();
 }
