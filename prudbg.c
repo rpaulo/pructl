@@ -160,7 +160,8 @@ cmd_disassemble(int argc, const char *argv[])
 {
 	unsigned int i, start, end;
 	char buf[32];
-	uint32_t pc;
+	uint32_t pc, ins;
+	struct breakpoint *bp;
 
 	pc = pru_read_reg(pru, pru_number, REG_PC);
 	if (argc > 0)
@@ -172,13 +173,24 @@ cmd_disassemble(int argc, const char *argv[])
 	else
 		end = start + 16;
 	for (i = start; i < end; i += 4) {
-		pru_disassemble(pru, pru_read_imem(pru, pru_number, i),
-		    buf, sizeof(buf));
+		LIST_FOREACH(bp, &breakpoint_list, entry) {
+			if (bp->addr == i)
+				break;
+		}
+		if (bp != NULL)
+			ins = bp->orig_instr;
+		else
+			ins = pru_read_imem(pru, pru_number, i);
+		pru_disassemble(pru, ins, buf, sizeof(buf));
 		if (pc == i)
 			printf("-> ");
 		else
 			printf("   ");
-		printf("0x%04x:  %s\n", i, buf);
+		printf("0x%04x:  %s", i, buf);
+		if (bp)
+			printf("\t; breakpoint %d\n", bp->n);
+		else
+			puts("");
 	}
 }
 
@@ -240,8 +252,7 @@ cmd_breakpoint(int argc, const char *argv[])
 		}
 		bp->n = last_breakpoint++;
 		bp->addr = addr;
-		bp->orig_instr = pru_read_imem(pru, pru_number,
-		    addr);
+		pru_insert_breakpoint(pru, pru_number, addr, &bp->orig_instr);
 		LIST_INSERT_HEAD(&breakpoint_list, bp, entry);
 	} else
 		printf("error: unknown breakpoint command\n");
