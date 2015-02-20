@@ -33,7 +33,7 @@
 static void __attribute__((noreturn))
 usage(void)
 {
-	fprintf(stderr, "usage: %s -t type [-p pru-number] [-edr] [program]\n",
+	fprintf(stderr, "usage: %s -t type [-p pru-number] [-edrw] [program]\n",
 	    getprogname());
 	exit(1);
 }
