@@ -85,6 +85,7 @@ DECL_CMD(quit);
 DECL_CMD(reset);
 DECL_CMD(register);
 DECL_CMD(run);
+DECL_CMD(step);
 
 static struct commands {
 	const char	*cmd;
@@ -101,6 +102,7 @@ static struct commands {
 	{ "reset", "Reset the PRU.", cmd_reset },
 	{ "register", "Operate on registers.", cmd_register },
 	{ "run", "Start the PRU.", cmd_run },
+	{ "step", "Single step an instruction.", cmd_step },
 };
 
 /*
@@ -367,6 +369,12 @@ cmd_memory(int argc, const char *argv[])
 		/* TODO */
 	} else
 		printf("error: unsupported sub-command\n");
+}
+
+static void
+cmd_step(int argc __unused, const char *argv[] __unused)
+{
+	pru_enable(pru, pru_number, 1);
 }
 
 static int
