@@ -38,7 +38,6 @@
 static pru_t pru;
 static unsigned int pru_number;
 static unsigned int last_breakpoint;
-static unsigned int in_breakpoint;
 
 struct breakpoint {
 	uint32_t n;
@@ -47,6 +46,8 @@ struct breakpoint {
 	uint32_t resv;
 	LIST_ENTRY(breakpoint) entry;
 };
+
+static struct breakpoint *in_breakpoint;
 
 static LIST_HEAD(, breakpoint) breakpoint_list =
 	LIST_HEAD_INITIALIZER(breakpoint_list);
@@ -125,20 +126,19 @@ cmd_run(int argc __unused, const char *argv[] __unused)
 	struct breakpoint *bp;
 	uint32_t pc;
 
-	pru_enable(pru, pru_number);
+	pru_enable(pru, pru_number, 0);
 	pru_wait(pru, pru_number);
 	pc = pru_read_reg(pru, pru_number, REG_PC);
 	LIST_FOREACH(bp, &breakpoint_list, entry) {
 		if (bp->addr == pc)
 			break;
 	}
-	if (bp == NULL) {
+	in_breakpoint = bp;
+	if (bp == NULL)
 		printf("PRU%d halted normally\n", pru_number);
-		in_breakpoint = 0;
-	} else {
+	else {
 		printf("PRU%d halted, breakpoint %d, address 0x%x\n",
 		    pru_number, bp->n, pc);
-		in_breakpoint = 1;
 		cmd_disassemble(0, NULL);
 	}
 }
@@ -262,6 +262,11 @@ static void
 cmd_continue(int argc __unused, const char *argv[] __unused)
 {
 	if (in_breakpoint) {
+		pru_write_imem(pru, pru_number,
+		    in_breakpoint->addr, in_breakpoint->orig_instr);
+		pru_enable(pru, pru_number, 1);
+		pru_insert_breakpoint(pru, pru_number,
+		    in_breakpoint->addr, NULL);
 		cmd_run(0, NULL);
 	} else {
 		printf("error: not in a breakpoint\n");

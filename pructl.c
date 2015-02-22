@@ -117,7 +117,7 @@ main(int argc, char **argv)
 		}
 	}
 	if (enable) {
-		error = pru_enable(pru, pru_number);
+		error = pru_enable(pru, pru_number, 0);
 		if (error) {
 			fprintf(stderr, "%s: unable to enable PRU %d\n",
 			    getprogname(), pru_number);
