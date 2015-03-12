@@ -87,7 +87,7 @@ DECL_CMD(register);
 DECL_CMD(run);
 DECL_CMD(step);
 
-static struct commands {
+static struct command {
 	const char	*cmd;
 	const char	*help;
 	void		(*handler)(int, const char **);
@@ -377,6 +377,38 @@ cmd_step(int argc __unused, const char *argv[] __unused)
 	pru_enable(pru, pru_number, 1);
 }
 
+
+static unsigned char
+complete(EditLine *cel, int ch __unused)
+{
+        const LineInfo *lf;
+	size_t len, i, lastidx;
+	char line[32];
+	int matches;
+
+	lf = el_line(cel);
+        len = (size_t)(lf->lastchar - lf->buffer);
+	if (len >= sizeof(line))
+		return (CC_ERROR);
+	strlcpy(line, lf->buffer, len + 1);
+	if (strchr(line, ' ') != NULL)
+		return CC_ERROR;
+
+	for (lastidx = matches = i = 0; i < nitems(cmds); i++) {
+		if (strncmp(line, cmds[i].cmd, len) == 0) {
+			matches++;
+			lastidx = i;
+		}
+	}
+	if (matches == 0 || matches > 1)
+		return CC_NORM;
+
+	el_insertstr(cel, cmds[lastidx].cmd + len);
+	el_insertstr(cel, " ");
+
+	return CC_REFRESH;
+}
+
 static int
 main_interface(void)
 {
@@ -409,6 +441,9 @@ main_interface(void)
 	el_set(elp, EL_HIST, history, hp);
 	el_set(elp, EL_SIGNAL, 1);
 	el_set(elp, EL_EDITOR, "emacs");
+	el_set(elp, EL_ADDFN, "prudbg-complete",
+	    "Line completion", complete);
+	el_set(elp, EL_BIND, "^I", "prudbg-complete", NULL);
 	el_source(elp, NULL);
 	do {
 		line = el_gets(elp, &count);
